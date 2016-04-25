@@ -1,3 +1,2 @@
-IFG-OpenGL-Course
+# shengo branch 
 
-Mr. Simpatiuri's stuff
