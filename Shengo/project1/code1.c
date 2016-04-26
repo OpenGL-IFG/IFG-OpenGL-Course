@@ -12,19 +12,21 @@ GC gc; // graphic elements
 
 unsigned long foreground, background;
 
-int old_mx=-1,old_my; // deklaracia, itogshi -1 imito ro pirvel daklikebaze xazi ar gaaketos, xo gamige?
 int width=700, height=700;
 
-int mainArray[700][700] = { {0 } };
+int mainArray[700][700] = { {0} };
 
 struct Point{
 
         int firstclick;
-	int x0, y0;		/*start*/	
-	int x_prev, y_prev;	/*previous*/
-	int x_curr, y_curr;	/*current*/
+
+	float x0, y0;		/*start*/	
+	float x_prev, y_prev;	/*previous*/
+	float x_curr, y_curr;	/*current*/
 
 	int polygon;		/* Polygon is created? */
+
+	float y_min, y_max;
 
 
 }P;
@@ -34,6 +36,9 @@ void init(){
 P.x_prev = 1;
 P.firstclick =1;
 P.polygon = 0;
+
+P.y_min = 0;
+P.y_max = 700;
 
 }
 
@@ -116,6 +121,10 @@ void disconnectX()
 ///////////////////////////////////////////////////////////////////////////////////
 
 
+void calcLinePoints(float x1, float y1, float x2, float y2);
+void fillPolygon();
+
+
 void doButtonPressEvent(XButtonEvent *pEvent)
 {
 if(P.polygon != 1)
@@ -123,23 +132,22 @@ if(P.polygon != 1)
 	if(P.firstclick == 1)
 	{
 	P.firstclick = 0; 
-	P.x0 = pEvent->x;
-	P.y0 = pEvent->y;
+	P.x0 = (float)pEvent->x;
+	P.y0 = (float)pEvent->y;
 	P.x_prev = P.x0 ;
 	P.y_prev = P.y0 ;
 	
 	}
 	else{
 	
-	P.x_curr = pEvent->x;
-	P.y_curr = pEvent->y;
+	P.x_curr = (float)pEvent->x;
+	P.y_curr = (float)pEvent->y;
 	
 	XDrawLine(display, main_window, gc, P.x_prev, P.y_prev, P.x_curr, P.y_curr); // draw line 
-      	printf("Mouse clicked at %d,%d\n", P.x_curr, P.y_curr);
-	printf("Polygon Created");
-
-
-
+      	printf("Mouse clicked at %f,%f\n", P.x_curr, P.y_curr);
+	
+	
+	printf("Gadasacemebi: x1: %f, x2: %f, y1: %f, y2: %f \n", P.x_prev, P.x_curr, P.y_prev, P.y_curr);
 	calcLinePoints(P.x_prev, P.y_prev, P.x_curr, P.y_curr);
 
 
@@ -166,41 +174,56 @@ void doKeyPressEvent(XKeyEvent *pEvent)
 	{
 		P.polygon=1;
 		XDrawLine(display, main_window, gc, P.x_curr, P.y_curr, P.x0, P.y0);// create pylygon	
+		calcLinePoints(P.x_curr, P.y_curr, P.x0, P.y0);		
 
 		XDrawImageString(display, main_window, gc, 10, 45, "Polygon Created",
                     strlen("Polygon Created"));
+		printf("Polygon created \n ");
 
-		XDrawImageString(display, main_window, gc, 10, 60, "Polygon filling coming soon. . .",
-                    strlen("Polygon filling coming soon. . ."));
+		XDrawImageString(display, main_window, gc, 10, 60, "f - to fill polygon",
+                    strlen("f - to fill polygon"));
  
 		//XFlush(display);
 
 	}
-
+	
+	if (key_buffer[0] == 'f' && P.polygon == 1)
+	{
+		//fillPolygon();
+		printf("Polygon Filled \n ");
+		XDrawImageString(display, main_window, gc, 10, 70, "Filling Polygon",
+                    strlen("Filling Polygon"));
+		
+	fillPolygon();
+	
+	}
+		
 	else printf("You pressed %c\n", key_buffer[0]); // log pushed keys
 }
 
 
-void calcLinePoints(int x1, int y1, int x2, int y2)
+void calcLinePoints(float x1, float y1, float x2, float y2)
 {
 
-	x1=(float)-x1; x2=(float)-x2; y1=(float)-y1; y2=(float)-y1;
+	printf("x1: %f, x2: %f, y1: %f, y2: %f \n", x1, x2, y1, y2);
+
+	//x1=-x1; x2=-x2; y1=-y1; y2=-y1;
 	
 	float x, y;
 	int ind_x, ind_y;
 
-	//int a = (x2-x1)/(y2-y1);
-	//int b = y1 - x1 * a;
-	printf("0000000000000000 \n");
-	//printf("Points %d :: %d \n", x1, x2);
+	
+	float a;
+	float b;
 
+	if(x1 > x2) { a = (y1-y2)/(x1-x2);}
+	
+	if(x1 < x2) {a = (y2-y1)/(x2-x1);}
 
-
-	float a = (y2-y1)/(x2-x1);
-	float b = y1 - (x1 * a);
+	b = y1 - (x1 * a);
 
         printf("Points %f :: %f \n", a, b);
-	printf("Shesadareblebi: %d :: %d \n", x1, x2);
+	//printf("Shesadareblebi: %f :: %f \n", x1, x2);
 
 	if(x1 > x2)
 	{
@@ -208,36 +231,167 @@ void calcLinePoints(int x1, int y1, int x2, int y2)
 		while(x < x1)
 			{
 			y = a * x + b;
-			//mainArray[x][y] = 1;
-			//printf("????????");
+			
 			printf("Line Points %d::%d\n", (int)x, (int)y);
 			
-			/*ind_x = (int)x; ind_y = (int)y; 
-			mainArray[ind_x][ind_y] = 1;
-			modi aq davisvenot */ 
-
+			ind_x = (int)x; ind_y = (int)y; 
+			mainArray[ind_y][ind_x] = 1;
+			
+			printf("Filled Array\n");
+			printf("Array at %d:%d = %d \n", ind_y, ind_x, mainArray[ind_y][ind_x]);
+			
 			x+=1;
 			}
 	}
-	else
+	if(x2 > x1)
 	{
 		x=x1;
 		while(x < x2)
 			{
 			y = a * x + b;
-			//mainArray[x][y] = 1;
-			//printf("???????");
+
 			printf("Line Points %d::%d\n", (int)x, (int)y);
 			
-			/*ind_x = (int)x; ind_y = (int)y; 
-			mainArray[ind_x][ind_y] = 1;
-			modi aq davisvenot */ 
+			ind_x = (int)x; ind_y = (int)y; 
+			mainArray[ind_y][ind_x] = 1;
+			
+			printf("Filled Array\n");
+			printf("Array at %d:%d = %d \n", ind_y, ind_x, mainArray[ind_y][ind_x]);
+			
 
 			x+=1;
 			}
 	}
+	if((int)a == 0)
+		{
+			if(y1 < y2)
+				{
+				y=y1;
+				ind_x = (int)x1;
+				while(y<y2)
+					{
+					ind_y = (int)y;
+
+					mainArray[ind_y][ind_x] = 1;
+
+					printf("Filled Array\n");
+					printf("Array at %d:%d = %d \n", ind_y, ind_x, mainArray[ind_y][ind_x]);
+					y=y+1;
+					}
+					
+				}
+			if(y1 > y2)
+				{
+				y=y2;
+				ind_x = (int)x1;
+				while(y<y1)
+					{
+					ind_y = (int)y;
+
+					mainArray[ind_y][ind_x] = 1;
+
+					printf("Filled Array\n");
+					printf("Array at %d:%d = %d \n", ind_y, ind_x, mainArray[ind_y][ind_x]);
+					y=y+1;
+					}
+					
+				}
+
+		}
+	if((int)b == 0)
+		{
+			if(x1 < x2)
+				{
+				x=x1;
+				ind_y = (int)y1;
+				while(x<x2)
+					{
+					ind_x = (int)x;
+
+					mainArray[ind_y][ind_x] = 1;
+
+					printf("Filled Array\n");
+					printf("Array at %d:%d = %d \n", ind_y, ind_x, mainArray[ind_y][ind_x]);
+					x=x+1;
+					}
+					
+				}
+			if(x1 > x2)
+				{
+				x=x2;
+				ind_y = (int)y1;
+				while(x<x1)
+					{
+					ind_x = (int)x;
+
+					mainArray[ind_y][ind_x] = 1;
+
+					printf("Filled Array\n");
+					printf("Array at %d:%d = %d \n", ind_y, ind_x, mainArray[ind_y][ind_x]);
+					x=x+1;
+					}
+					
+				}
+
+		}
+}
+
+fillPolygon(){
+
+
+int x;
+int y;
+
+int draw = 0;
+
+for(y=0; y<700; y++)
+	{
+	for(x=0; x<700; x++)
+		{       
+
+			/*			
+			if( mainArray[y][x] == 1 )
+			{ 
+				if(draw == 1) 
+				{draw=0;}
+			  	else {draw=1;}
+
+			  printf("Changed\n");	
+			  //usleep(1000);	
+				
+			}
+			
+
+			if(draw == 1)
+			{			
+				printf("Filling\n");			
+				XDrawPoint(display, main_window, gc, x, y);
+				usleep(1);
+			}	
+			*/
+			
+			if( mainArray[y][x] == 1 )
+			{
+				while(1)
+				{
+				printf("Filling\n");			
+				XDrawPoint(display, main_window, gc, x, y);
+				usleep(1);
+				x=x+1;
+				if( mainArray[y][x] == 1 ) {x=700; break;}
+				XFlush(display);
+				}
+				
+			}
+
+
+		}
+	//draw=0;	
+	}
+
 
 }
+
 
 
 
