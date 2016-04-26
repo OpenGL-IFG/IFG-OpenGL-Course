@@ -12,10 +12,12 @@ GC gc; // graphic elements
 
 unsigned long foreground, background;
 
-int x,y,old_mx=-1,old_my; // deklaracia, itogshi -1 imito ro pirvel daklikebaze xazi ar gaaketos, xo gamige?
-int width, height;
+int old_mx=-1,old_my; // deklaracia, itogshi -1 imito ro pirvel daklikebaze xazi ar gaaketos, xo gamige?
+int width=700, height=700;
 
- struct Point{
+int mainArray[700][700] = { {0 } };
+
+struct Point{
 
         int firstclick;
 	int x0, y0;		/*start*/	
@@ -23,6 +25,8 @@ int width, height;
 	int x_curr, y_curr;	/*current*/
 
 	int polygon;		/* Polygon is created? */
+
+
 }P;
 
 void init(){
@@ -131,8 +135,12 @@ if(P.polygon != 1)
 	P.y_curr = pEvent->y;
 	
 	XDrawLine(display, main_window, gc, P.x_prev, P.y_prev, P.x_curr, P.y_curr); // draw line 
-      	printf("Mouse clicked at %d,%d\n", P.x_curr, P.x_curr);
+      	printf("Mouse clicked at %d,%d\n", P.x_curr, P.y_curr);
 	printf("Polygon Created");
+
+
+
+	calcLinePoints(P.x_prev, P.y_prev, P.x_curr, P.y_curr);
 
 
 	P.x_prev = P.x_curr ;
@@ -159,19 +167,76 @@ void doKeyPressEvent(XKeyEvent *pEvent)
 		P.polygon=1;
 		XDrawLine(display, main_window, gc, P.x_curr, P.y_curr, P.x0, P.y0);// create pylygon	
 
-			
-
 		XDrawImageString(display, main_window, gc, 10, 45, "Polygon Created",
                     strlen("Polygon Created"));
 
 		XDrawImageString(display, main_window, gc, 10, 60, "Polygon filling coming soon. . .",
                     strlen("Polygon filling coming soon. . ."));
  
-		XFlush(display);
+		//XFlush(display);
 
 	}
 
 	else printf("You pressed %c\n", key_buffer[0]); // log pushed keys
+}
+
+
+void calcLinePoints(int x1, int y1, int x2, int y2)
+{
+
+	x1=(float)-x1; x2=(float)-x2; y1=(float)-y1; y2=(float)-y1;
+	
+	float x, y;
+	int ind_x, ind_y;
+
+	//int a = (x2-x1)/(y2-y1);
+	//int b = y1 - x1 * a;
+	printf("0000000000000000 \n");
+	//printf("Points %d :: %d \n", x1, x2);
+
+
+
+	float a = (y2-y1)/(x2-x1);
+	float b = y1 - (x1 * a);
+
+        printf("Points %f :: %f \n", a, b);
+	printf("Shesadareblebi: %d :: %d \n", x1, x2);
+
+	if(x1 > x2)
+	{
+		x=x2;
+		while(x < x1)
+			{
+			y = a * x + b;
+			//mainArray[x][y] = 1;
+			//printf("????????");
+			printf("Line Points %d::%d\n", (int)x, (int)y);
+			
+			/*ind_x = (int)x; ind_y = (int)y; 
+			mainArray[ind_x][ind_y] = 1;
+			modi aq davisvenot */ 
+
+			x+=1;
+			}
+	}
+	else
+	{
+		x=x1;
+		while(x < x2)
+			{
+			y = a * x + b;
+			//mainArray[x][y] = 1;
+			//printf("???????");
+			printf("Line Points %d::%d\n", (int)x, (int)y);
+			
+			/*ind_x = (int)x; ind_y = (int)y; 
+			mainArray[ind_x][ind_y] = 1;
+			modi aq davisvenot */ 
+
+			x+=1;
+			}
+	}
+
 }
 
 
@@ -183,9 +248,8 @@ int main (int argc, char** argv){
 
 	XEvent event;
 	connectX();
-	x=700;
-	y=700;
-	main_window = openWindow(10,20,x,y,5, argc, argv);
+	
+	main_window = openWindow(10,20,width,height,5, argc, argv);
 	gc = getGC();
 	XMapWindow(display, main_window); /*maps the window and all of its subwindows*/
 
@@ -204,7 +268,7 @@ int main (int argc, char** argv){
       			break;
 
 		case ButtonPress:
-			printf("Button Pressed123123\n");
+			//printf("Button Pressed123123\n");
 			doButtonPressEvent(&event);
 			break;
 		case KeyPress:
