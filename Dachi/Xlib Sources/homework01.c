@@ -17,13 +17,25 @@ int x,y,old_mx=-1,old_my,mx,my,first_mx,first_my;
 int c_clicked = 0;
 int run_loop = 1;
 
-typedef struct Point2Z {
+typedef struct ET_entry ET_entry;
+typedef struct Point2 Point2;
+//typedef struct ET_entry ET_entry;
+//typedef struct ET_entry ET_entry;
+struct ET_entry {
+    int maxY;
+    int x;
     float k;
     float b;
-} Point2;
+    ET_entry * next;
+};
+struct Point2 {
+    float k;
+    float b;
+};
 typedef struct PointZ {
     int x;
     int y;
+    int pos;
 } Point;
 typedef struct ScanLines {
     Point startP;
@@ -37,18 +49,124 @@ Point2* new_functions = NULL;
 Point* points = NULL;
 Point* new_points = NULL;
 
+// edge table
+ET_entry* ET=NULL;
+ET_entry* n_ET=NULL;
 
-Point2 calculatekb(int x1, int y1, int x2, int y2) {
+int max(int x, int y)
+{
+    if (x<y)
+    {
+        return y;
+    }
+    return x;
+}
+Point2 calculatekb(int x1, int y1, int x2, int y2)
+{
     Point2 tmpP;
     int dx,dy;
     float k,b;
-    dx = x1-x2;
-    dy = y1-y2;
+    dx = x2-x1;
+    dy = y2-y1;
     k = (float)dy/(float)dx;
     b = (float)y1-k*(float)x1;
     tmpP.k=k;
     tmpP.b=b;
     return tmpP;
+}
+Point* sortForX(Point* pnts)
+{
+    Point* retP = NULL;
+    Point tmoP;
+    retP = (Point*) realloc(retP, pointsSize*sizeof(Point*));
+    retP = pnts;
+    int i=0,j=0;
+    while (i<pointsSize-1)
+    {
+        j=0;
+        while (j<pointsSize-i-1)
+        {
+            if (retP[j].y > retP[j+1].y)
+            {
+                tmoP = retP[j];
+                retP[j] = retP[j+1];
+                retP[j+1] = tmoP;
+            }
+            j++;
+        }
+        i++;
+    }
+    return retP;
+}
+void fillPolygon() {
+    int i = 0, j = 0;;
+    pointsSize--;
+    points = (Point*) sortForX(points);
+    printf("Size: %d\n",pointsSize);
+    while (i<pointsSize)
+    {
+        printf("Points [Y - %d X - %d POS - %d]\n",points[i].y,points[i].x,points[i].pos);
+        i++;
+    }
+    n_ET = (ET_entry*) realloc(ET, pointsSize*sizeof(ET_entry));
+    if (n_ET!=NULL)
+    {
+        printf("REallocation failed for edge table");
+    }
+    ET = n_ET;
+    int prev_i,next_i;
+    i=0,prev_i=(pointsSize-1),next_i=1;
+    while (i<pointsSize)
+    {
+        ET_entry* tmpEntry1,tmpEntry2;
+        Point* leftOne,rightOne;
+        Point2* tmpKB=NULL;
+        int x,y,pos;
+        x=points[i].x;
+        y=points[i].y;
+        pos=points[i].pos;
+        if (pos==0)
+        {
+            prev_i=pointsSize-1;
+            next_i=1;
+        }
+        else if (pos==(pointsSize-1))
+        {
+            next_i=0;
+            prev_i=pos-1;
+        }
+        else
+        {
+            next_i=pos+1;
+            prev_i=pos-1;
+        }
+        j=0;
+        while (j<pointsSize)
+        {
+            if (points[j].pos == prev_i)
+            {
+                leftOne = points[j];
+            }
+            if (points[j].pos == next_i)
+            {
+                rightOne = points[j];
+            }
+            j++;
+        }
+        tmpEntry1.maxY = max(points[i].y, leftOne.y);
+        tmpEntry1.x = points[i].x;
+        tmpKB = (Point2*) calculatekb(points[i].x,points[i].y,leftOne.x,leftOne.y);
+        tmpEntry1.k = tmpKB.k;
+        tmpEntry1.b = tmpKB.b;
+        tmpEntry2.maxY = max(points[i].y, rightOne.y);
+        tmpEntry2.x = points[i].x;
+        tmpKB = (Point2*) calculatekb(points[i].x,points[i].y,rightOne.x,rightOne.y);
+        tmpEntry2.k = tmpKB.k;
+        tmpEntry2.b = tmpKB.b;
+        tmpEntry2.next = NULL;
+        tmpEntry1.next = tmpEntry2;
+        i++;
+    }
 }
 
 void connectX()
@@ -104,8 +222,8 @@ void disconnectX()
 
 void draw()
 {
-    XDrawImageString(display, main_window, gc, x/2-strlen("Draw with zigzag lines"), 10, "Draw with zigzag lines",
-                     strlen("Draw with zigzag lines"));
+    XDrawImageString(display, main_window, gc, x/2-strlen("Polygon Filling Program"), 10, "Polygon Filling Program",
+                     strlen("Polygon Filling Program"));
     XFlush(display);
 }
 
@@ -113,19 +231,14 @@ void doButtonPressEvent(XButtonEvent *pEvent)
 {
     if (!c_clicked)
     {
-        // tu pirveli klikia dauyenos old mnishvnelobebs
-        // pirveli kilis mnishvneloobebi xolo
         Point tmpP;
         if (old_mx == -1)
         {
-            // mere mx,my ebi gadava old mnishvnelobebshi
-            // da daixateba uwyveti texilebi
-            // konkretulad es buton iventidan igebs x
-            // da ys sadac mxda dacheris inventi
             first_mx = old_mx = pEvent->x;
             first_my = old_my = pEvent->y;
             tmpP.x = first_mx;
             tmpP.y = first_my;
+            tmpP.pos = pointIndex;
             points[pointIndex] = tmpP;
             pointsSize++;
             pointIndex++;
@@ -139,7 +252,6 @@ void doButtonPressEvent(XButtonEvent *pEvent)
         {
             mx = pEvent->x;
             my = pEvent->y;
-            // ixateba xazi ori wertilis koordinatebit
             XDrawLine(display, main_window, gc, old_mx, old_my, mx, my);
             printf("Mouse clicked at %d,%d\n", mx,my); // logging here
             printf("Button pressed\n");
@@ -155,6 +267,7 @@ void doButtonPressEvent(XButtonEvent *pEvent)
             old_my = my;
             tmpP.x = old_mx;
             tmpP.y = old_my;
+            tmpP.pos = pointIndex;
             points[pointIndex] = tmpP;
             pointsSize++;
             pointIndex++;
@@ -175,7 +288,7 @@ void doKeyPressEvent(XKeyEvent *pEvent)
     KeySym key_sym;
     XLookupString(pEvent, key_buffer, key_buffer_size,
                   &key_sym, &compose_status);
-    if (key_buffer[0] == 'q') disconnectX(); // tu daachira q gamovides
+    if (key_buffer[0] == 'q') disconnectX();
     if (key_buffer[0] == 'c')
     {
         c_clicked=1;
@@ -197,8 +310,8 @@ void doKeyPressEvent(XKeyEvent *pEvent)
             printf("K: %f, B: %f\n", tmpP.k, tmpP.b);
             i++;
         }
+        fillPolygon();
     }
-    else printf("You pressed %c\n", key_buffer[0]); // logi
 }
 
 
