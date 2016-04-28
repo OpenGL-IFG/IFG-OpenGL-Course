@@ -10,6 +10,7 @@ Display *display; // display
 int screen; // screen
 Window main_window; // windows(fanjara)
 GC gc; // graphic elements
+XGCValues gcvalues;
 
 unsigned long foreground, background;
 
@@ -29,6 +30,7 @@ struct Point{
 	int polygon;		/* Polygon is created? */
 
 	int y_min, y_max;
+	int x_min, x_max;
 
 
 }P;
@@ -39,8 +41,10 @@ P.x_prev = 1;
 P.firstclick =1;
 P.polygon = 0;
 
-P.y_min = 0;
-P.y_max = 700;
+P.y_min = 700;
+P.y_max = 0;
+P.x_min = 700;
+P.x_max = 0;
 
 }
 
@@ -139,6 +143,11 @@ if(P.polygon != 1)
 	P.x_prev = P.x0 ;
 	P.y_prev = P.y0 ;
 	
+	P.y_min=P.y0;
+	P.y_max=P.y0;
+	P.x_min=P.x0;
+	P.x_max=P.x0;
+	
 	}
 	else{
 	
@@ -151,6 +160,14 @@ if(P.polygon != 1)
 	
 	printf("Gadasacemebi: x1: %d, x2: %d, y1: %d, y2: %d \n", P.x_prev, P.x_curr, P.y_prev, P.y_curr);
 	calcLinePoints(P.x_prev, P.y_prev, P.x_curr, P.y_curr);
+
+
+	if(P.x_curr > P.x_max) {P.x_max = P.x_curr;}
+	if(P.x_curr < P.x_min) {P.x_min = P.x_curr;}
+
+	if(P.y_curr > P.y_max) {P.y_max = P.y_curr;}
+	if(P.y_curr < P.y_min) {P.y_min = P.y_curr;}
+
 
 
 	P.x_prev = P.x_curr ;
@@ -257,7 +274,10 @@ fillPolygon(){
 int x;
 int y;
 
-for(y=0; y<700; y++)
+int y_mid=(P.y_max + P.y_min )/2;
+int x_mid=(P.x_max + P.x_min )/2;
+
+for(y=P.y_max; y<P.y_min+1; y--)
 {
 	int flag=1;
 	for(x=0; x<700; x++)
@@ -276,10 +296,40 @@ for(y=0; y<700; y++)
 usleep(5000);
 int draw = 0;
 //
-for(y=700; y>0; y--)
+for(y=P.y_max; y>P.y_min-1; y--)
 	{
-	for(x=0; x<700; x++)
-		{       
+		for(x=0; x<700; x++)
+		{   
+
+//colors -- -+ ++ -+
+	if(y<y_mid && x<x_mid )
+{
+gcvalues.foreground = 0x0044FF;
+gcvalues.background = 0xFFFFFF;
+gc = XCreateGC(display, main_window, GCFunction|GCPlaneMask|GCForeground|GCBackground, &gcvalues);
+}
+	if(y<y_mid && x>x_mid )
+{
+gcvalues.foreground = 0xF1C232;
+gcvalues.background = 0xFFFFFF;
+gc = XCreateGC(display, main_window, GCFunction|GCPlaneMask|GCForeground|GCBackground, &gcvalues);
+}
+	if(y>y_mid && x>x_mid )
+{
+gcvalues.foreground = 0x00FFFF;
+gcvalues.background = 0xFFFFFF;
+gc = XCreateGC(display, main_window, GCFunction|GCPlaneMask|GCForeground|GCBackground, &gcvalues);
+}
+	if(y>y_mid && x<x_mid )
+{
+char c='990000';
+gcvalues.foreground = "0x"+c;
+gcvalues.background = 0xFFFFFF;
+gc = XCreateGC(display, main_window, GCFunction|GCPlaneMask|GCForeground|GCBackground, &gcvalues);
+}
+//colors -- -+ ++ -+
+
+    
 
 			//			
 			if( mainArray[y][x] == 1 )
@@ -344,6 +394,22 @@ int main (int argc, char** argv){
 	gc = getGC();
 	XMapWindow(display, main_window); /*maps the window and all of its subwindows*/
 
+
+
+
+  ////////////////////////////////
+ ////////////////////////////////
+ ////////////////////////////////
+  
+  gcvalues.function = GXcopy;
+  gcvalues.plane_mask = AllPlanes;
+  gcvalues.foreground = 0x000000;
+  gcvalues.background = 0xFFFFFF;
+  gc = XCreateGC(display, main_window, GCFunction|GCPlaneMask|GCForeground|GCBackground, &gcvalues);
+
+    ////////////////////////////////
+   ///////////////////////////////
+  //////////////////////////////// 
 
   
 	while (True){ /*while clicking*/
