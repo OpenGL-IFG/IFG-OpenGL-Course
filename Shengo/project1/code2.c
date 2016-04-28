@@ -3,6 +3,7 @@
 #include <X11/Xlib.h>
 #include "math.h"
 
+
 char WINDOW_NAME[] = "Project 1";
 char ICON_NAME[] = "Icon";
 
@@ -268,8 +269,8 @@ void calcLinePoints(int x1, int y1, int x2, int y2)
 	
 }
 
-fillPolygon(){
 
+fillPolygon(){
 
 int x;
 int y;
@@ -296,12 +297,24 @@ for(y=P.y_max; y<P.y_min+1; y--)
 usleep(5000);
 int draw = 0;
 //
+int r = 0xFF;
+int g = 0x00ff00;
+int b = 0xFF;
+
 for(y=P.y_max; y>P.y_min-1; y--)
 	{
+	b+=y%0xFF;
+	g-=y%0xFF;
+	r-=y%0xFF;
 		for(x=0; x<700; x++)
-		{   
+		{  
+		
+	r+=x%0xFF;
+	g-=x%0xFF;
+	//b-=y%0xFF; 
 
 //colors -- -+ ++ -+
+/*
 	if(y<y_mid && x<x_mid )
 {
 gcvalues.foreground = 0x0044FF;
@@ -327,7 +340,14 @@ gcvalues.foreground = "0x"+c;
 gcvalues.background = 0xFFFFFF;
 gc = XCreateGC(display, main_window, GCFunction|GCPlaneMask|GCForeground|GCBackground, &gcvalues);
 }
+*/
 //colors -- -+ ++ -+
+
+//gcvalues.foreground = x*y;
+
+gcvalues.foreground = (r+g+b);
+gcvalues.background = 0xFFFFFF;
+gc = XCreateGC(display, main_window, GCFunction|GCPlaneMask|GCForeground|GCBackground, &gcvalues);
 
     
 
@@ -362,7 +382,7 @@ gc = XCreateGC(display, main_window, GCFunction|GCPlaneMask|GCForeground|GCBackg
 
 				if( mainArray[y][x+1] == 1 && mainArray[y][x+2] != 1 )
 				{ 
-					break;
+					draw=0; x+=2;
 				}
 			}	
 			//
