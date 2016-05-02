@@ -3,6 +3,7 @@
 #include <X11/Xlib.h>
 #include "math.h"
 
+
 char WINDOW_NAME[] = "Project 1";
 char ICON_NAME[] = "Icon";
 
@@ -10,13 +11,14 @@ Display *display; // display
 int screen; // screen
 Window main_window; // windows(fanjara)
 GC gc; // graphic elements
+XGCValues gcvalues; //for colors
 
 unsigned long foreground, background;
 
 int width=700, height=700;
 
-int mainArray[700][700] = { {0} };
-int crossXArray[700] = { {0} };
+int mainArray[700][700] = { {0} }; //for storing coordinates of the edges
+int crossXArray[700] = { {0} }; //how many times will x(i) line cross edges
 
 struct Point{
 
@@ -29,6 +31,7 @@ struct Point{
 	int polygon;		/* Polygon is created? */
 
 	int y_min, y_max;
+	int x_min, x_max;
 
 
 }P;
@@ -39,8 +42,10 @@ P.x_prev = 1;
 P.firstclick =1;
 P.polygon = 0;
 
-P.y_min = 0;
-P.y_max = 700;
+P.y_min = 700;
+P.y_max = 0;
+P.x_min = 700;
+P.x_max = 0;
 
 }
 
@@ -139,6 +144,11 @@ if(P.polygon != 1)
 	P.x_prev = P.x0 ;
 	P.y_prev = P.y0 ;
 	
+	P.y_min=P.y0;
+	P.y_max=P.y0;
+	P.x_min=P.x0;
+	P.x_max=P.x0;
+	
 	}
 	else{
 	
@@ -151,6 +161,14 @@ if(P.polygon != 1)
 	
 	printf("Gadasacemebi: x1: %d, x2: %d, y1: %d, y2: %d \n", P.x_prev, P.x_curr, P.y_prev, P.y_curr);
 	calcLinePoints(P.x_prev, P.y_prev, P.x_curr, P.y_curr);
+
+
+	if(P.x_curr > P.x_max) {P.x_max = P.x_curr;}
+	if(P.x_curr < P.x_min) {P.x_min = P.x_curr;}
+
+	if(P.y_curr > P.y_max) {P.y_max = P.y_curr;}
+	if(P.y_curr < P.y_min) {P.y_min = P.y_curr;}
+
 
 
 	P.x_prev = P.x_curr ;
@@ -251,13 +269,16 @@ void calcLinePoints(int x1, int y1, int x2, int y2)
 	
 }
 
-fillPolygon(){
 
+fillPolygon(){
 
 int x;
 int y;
 
-for(y=0; y<700; y++)
+int y_mid=(P.y_max + P.y_min )/2;
+int x_mid=(P.x_max + P.x_min )/2;
+
+for(y=P.y_max; y<P.y_min+1; y--)
 {
 	int flag=1;
 	for(x=0; x<700; x++)
@@ -275,11 +296,75 @@ for(y=0; y<700; y++)
 
 usleep(5000);
 int draw = 0;
+
 //
-for(y=700; y>0; y--)
+
+
+long  col1 = 0xff0000;
+long  col2 = 0x0000ff;
+long  col3 = 0x00ff00;
+
+long  colorLeft, colorFinal;
+
+int startRed   = (col1>> 16) & 0xFF;
+int startGreen = (col1 >>  8) & 0xFF;
+int startBlue  =  col1        & 0xFF;
+
+int endRed   = (col2 >> 16) & 0xFF;
+int endGreen = (col2 >>  8) & 0xFF;
+int endBlue  =  col2        & 0xFF;
+
+int endRed3   = (col3 >> 16) & 0xFF;
+int endGreen3 = (col3 >>  8) & 0xFF;
+int endBlue3  =  col3        & 0xFF;
+
+int newRed, newGreen, newBlue; //bottom->top
+
+int newRed3, newGreen3, newBlue3;
+int newRed33, newGreen33, newBlue33;
+
+for(y=P.y_max; y>P.y_min-1; y--)
 	{
-	for(x=0; x<700; x++)
-		{       
+	
+
+	 newRed = ( endRed - startRed )*((float )y / P.y_max) + startRed;
+	 newGreen = ( endGreen - startGreen )*((float )y / P.y_max) + startGreen;
+	 newBlue = ( endBlue - startBlue )*((float )y / P.y_max) + startBlue;
+
+	 newRed33 = ( endRed3 - startRed )*((float )y / P.y_max) + startRed;
+	 newGreen33 = ( endGreen3 - startGreen )*((float )y / P.y_max) + startGreen;
+	 newBlue33 = ( endBlue3 - startBlue )*((float )y / P.y_max) + startBlue;
+
+	 
+
+	colorLeft = newRed << 16 | newGreen << 8 | newBlue;
+
+	printf("color is 0x%08x \n" ,colorLeft);
+
+
+
+		for(x=P.x_min; x<P.x_max; x++)
+		{  
+
+	
+		//newRed3 = ( endRed3 - newRed )*((float )x / P.x_max) + newRed;
+		//newGreen3 = ( endGreen3 - newGreen )*((float )x / P.x_max) + newGreen;
+	 	//newBlue3 = ( endBlue3 - newBlue )*((float )x / P.x_max) + newBlue;
+
+		newRed3 = ( newRed33 - newRed )*((float )x / P.x_max) + newRed;
+		newGreen3 = ( newGreen33 - newGreen )*((float )x / P.x_max) + newGreen;
+	 	newBlue3 = ( newBlue33 - newBlue )*((float )x / P.x_max) + newBlue;
+
+
+		colorFinal = newRed3 << 16 | newGreen3 << 8 | newBlue3;
+
+
+
+		gcvalues.foreground = colorFinal;
+		gcvalues.background = 0xFFFFFF;
+		gc = XCreateGC(display, main_window, GCFunction|GCPlaneMask|GCForeground|GCBackground, &gcvalues);
+
+    
 
 			//			
 			if( mainArray[y][x] == 1 )
@@ -288,7 +373,7 @@ for(y=700; y>0; y--)
 				{draw=1;}
 			  	else {draw=0;}
 
-			  printf("Changed\n");	
+			 // printf("Changed\n");	
 			  //usleep(1000);	
 				
 			}
@@ -304,7 +389,7 @@ for(y=700; y>0; y--)
 
 				else
 				{
-				printf("Filling\n");			
+				//printf("Filling\n");			
 				XDrawPoint(display, main_window, gc, x, y);
 				//usleep(1);
 				XFlush(display);
@@ -312,7 +397,7 @@ for(y=700; y>0; y--)
 
 				if( mainArray[y][x+1] == 1 && mainArray[y][x+2] != 1 )
 				{ 
-					break;
+					draw=0; x+=2;
 				}
 			}	
 			//
@@ -344,6 +429,22 @@ int main (int argc, char** argv){
 	gc = getGC();
 	XMapWindow(display, main_window); /*maps the window and all of its subwindows*/
 
+
+
+
+  ////////////////////////////////
+ ////////////////////////////////
+ ////////////////////////////////
+  
+  gcvalues.function = GXcopy;
+  gcvalues.plane_mask = AllPlanes;
+  gcvalues.foreground = 0x000000;
+  gcvalues.background = 0xFFFFFF;
+  gc = XCreateGC(display, main_window, GCFunction|GCPlaneMask|GCForeground|GCBackground, &gcvalues);
+
+    ////////////////////////////////
+   ///////////////////////////////
+  //////////////////////////////// 
 
   
 	while (True){ /*while clicking*/

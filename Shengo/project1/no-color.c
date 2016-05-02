@@ -3,7 +3,6 @@
 #include <X11/Xlib.h>
 #include "math.h"
 
-
 char WINDOW_NAME[] = "Project 1";
 char ICON_NAME[] = "Icon";
 
@@ -11,7 +10,6 @@ Display *display; // display
 int screen; // screen
 Window main_window; // windows(fanjara)
 GC gc; // graphic elements
-XGCValues gcvalues;
 
 unsigned long foreground, background;
 
@@ -31,7 +29,6 @@ struct Point{
 	int polygon;		/* Polygon is created? */
 
 	int y_min, y_max;
-	int x_min, x_max;
 
 
 }P;
@@ -42,10 +39,8 @@ P.x_prev = 1;
 P.firstclick =1;
 P.polygon = 0;
 
-P.y_min = 700;
-P.y_max = 0;
-P.x_min = 700;
-P.x_max = 0;
+P.y_min = 0;
+P.y_max = 700;
 
 }
 
@@ -144,11 +139,6 @@ if(P.polygon != 1)
 	P.x_prev = P.x0 ;
 	P.y_prev = P.y0 ;
 	
-	P.y_min=P.y0;
-	P.y_max=P.y0;
-	P.x_min=P.x0;
-	P.x_max=P.x0;
-	
 	}
 	else{
 	
@@ -161,14 +151,6 @@ if(P.polygon != 1)
 	
 	printf("Gadasacemebi: x1: %d, x2: %d, y1: %d, y2: %d \n", P.x_prev, P.x_curr, P.y_prev, P.y_curr);
 	calcLinePoints(P.x_prev, P.y_prev, P.x_curr, P.y_curr);
-
-
-	if(P.x_curr > P.x_max) {P.x_max = P.x_curr;}
-	if(P.x_curr < P.x_min) {P.x_min = P.x_curr;}
-
-	if(P.y_curr > P.y_max) {P.y_max = P.y_curr;}
-	if(P.y_curr < P.y_min) {P.y_min = P.y_curr;}
-
 
 
 	P.x_prev = P.x_curr ;
@@ -269,16 +251,13 @@ void calcLinePoints(int x1, int y1, int x2, int y2)
 	
 }
 
-
 fillPolygon(){
+
 
 int x;
 int y;
 
-int y_mid=(P.y_max + P.y_min )/2;
-int x_mid=(P.x_max + P.x_min )/2;
-
-for(y=P.y_max; y<P.y_min+1; y--)
+for(y=0; y<700; y++)
 {
 	int flag=1;
 	for(x=0; x<700; x++)
@@ -297,59 +276,10 @@ for(y=P.y_max; y<P.y_min+1; y--)
 usleep(5000);
 int draw = 0;
 //
-int r = 0xFF;
-int g = 0x00ff00;
-int b = 0xFF;
-
-for(y=P.y_max; y>P.y_min-1; y--)
+for(y=700; y>0; y--)
 	{
-	b+=y%0xFF;
-	g-=y%0xFF;
-	r-=y%0xFF;
-		for(x=0; x<700; x++)
-		{  
-		
-	r+=x%0xFF;
-	g-=x%0xFF;
-	//b-=y%0xFF; 
-
-//colors -- -+ ++ -+
-/*
-	if(y<y_mid && x<x_mid )
-{
-gcvalues.foreground = 0x0044FF;
-gcvalues.background = 0xFFFFFF;
-gc = XCreateGC(display, main_window, GCFunction|GCPlaneMask|GCForeground|GCBackground, &gcvalues);
-}
-	if(y<y_mid && x>x_mid )
-{
-gcvalues.foreground = 0xF1C232;
-gcvalues.background = 0xFFFFFF;
-gc = XCreateGC(display, main_window, GCFunction|GCPlaneMask|GCForeground|GCBackground, &gcvalues);
-}
-	if(y>y_mid && x>x_mid )
-{
-gcvalues.foreground = 0x00FFFF;
-gcvalues.background = 0xFFFFFF;
-gc = XCreateGC(display, main_window, GCFunction|GCPlaneMask|GCForeground|GCBackground, &gcvalues);
-}
-	if(y>y_mid && x<x_mid )
-{
-char c='990000';
-gcvalues.foreground = "0x"+c;
-gcvalues.background = 0xFFFFFF;
-gc = XCreateGC(display, main_window, GCFunction|GCPlaneMask|GCForeground|GCBackground, &gcvalues);
-}
-*/
-//colors -- -+ ++ -+
-
-//gcvalues.foreground = x*y;
-
-gcvalues.foreground = (r+g+b);
-gcvalues.background = 0xFFFFFF;
-gc = XCreateGC(display, main_window, GCFunction|GCPlaneMask|GCForeground|GCBackground, &gcvalues);
-
-    
+	for(x=0; x<700; x++)
+		{       
 
 			//			
 			if( mainArray[y][x] == 1 )
@@ -382,7 +312,7 @@ gc = XCreateGC(display, main_window, GCFunction|GCPlaneMask|GCForeground|GCBackg
 
 				if( mainArray[y][x+1] == 1 && mainArray[y][x+2] != 1 )
 				{ 
-					draw=0; x+=2;
+					break;
 				}
 			}	
 			//
@@ -414,22 +344,6 @@ int main (int argc, char** argv){
 	gc = getGC();
 	XMapWindow(display, main_window); /*maps the window and all of its subwindows*/
 
-
-
-
-  ////////////////////////////////
- ////////////////////////////////
- ////////////////////////////////
-  
-  gcvalues.function = GXcopy;
-  gcvalues.plane_mask = AllPlanes;
-  gcvalues.foreground = 0x000000;
-  gcvalues.background = 0xFFFFFF;
-  gc = XCreateGC(display, main_window, GCFunction|GCPlaneMask|GCForeground|GCBackground, &gcvalues);
-
-    ////////////////////////////////
-   ///////////////////////////////
-  //////////////////////////////// 
 
   
 	while (True){ /*while clicking*/
